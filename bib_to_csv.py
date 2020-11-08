@@ -1,35 +1,43 @@
 from pybtex.database.input import bibtex
 import string
 
-#open a bibtex file
+# open a bibtex file
 parser = bibtex.Parser()
-bibdata = parser.parse_file("/Users/mcewen/AP/Docs/Bibtex/mybibs_new.bib")
+bibdata = parser.parse_file("My Collection.bib")
 
 # tralsator for removing punctuation
 translator = str.maketrans('', '', string.punctuation)
 
 # open our output file
-f = open('mybibs_new.csv', 'w') 
+f = open('mybibs_new.csv', 'w')
 
 # header row
-f.write("Title, Year, Authors, Journal, Arxiv\n")
+f.write("Type, Journal/Conference, Year, Authors, Title \n")
 
-#loop through the individual references
+# loop through the individual references
 for bib_id in bibdata.entries:
     b = bibdata.entries[bib_id].fields
     try:
-        # change these lines to create a SQL insert
-        title = b["title"]
-        title = title.replace('{', '')
-        title = title.replace('}', '')
-        f.write('"' + title + '"')
+        # Type
+        f.write('"' + bibdata.entries[bib_id].type + '"')
+        print(bib_id + " " + bibdata.entries[bib_id].type)
+
+        # Journal/Conference
+        f.write(" ,")
+        if bibdata.entries[bib_id].type == "article":
+            f.write('"' + b["journal"] + '"')
+        else:
+            f.write('"' + b["booktitle"] + '"')
+
+        # Year
         f.write(" ,")
         f.write(b["year"])
         f.write(" ,")
-        #deal with multiple authors
+
+        # deal with multiple authors
         authors = ""
         for author in bibdata.entries[bib_id].persons["author"]:
-            new_author = str(author.first()) + " " + str(author.last()) 
+            new_author = str(author.first()) + " " + str(author.last())
             new_author = new_author.translate(translator)
             new_author = new_author.replace('{', '')
             new_author = new_author.replace('}', '')
@@ -38,18 +46,21 @@ for bib_id in bibdata.entries:
             else:
                 authors = authors + ", " + new_author
         f.write(authors + '"')
+
+        # Title
         f.write(" ,")
-        if 'eprint' in b.keys():
-            f.write(b["eprint"])
-        f.write(" ,")
-        f.write('"' + b["journal"] + '"')
+        title = b["title"]
+        title = title.replace('{', '')
+        title = title.replace('}', '')
+        f.write('"' + title + '"')
 
     # field may not exist for a reference
     except(KeyError):
+        print(bib_id + " error")
         f.write(b["booktitle"])
         f.write("\n")
         continue
     f.write("\n")
-    
+
 # close output file
 f.close()
